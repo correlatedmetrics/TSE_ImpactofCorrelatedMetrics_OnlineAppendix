@@ -1,7 +1,4 @@
 
-
-
-
 # Motivation analysis
 # Section 3.2 The impact of the number of correlated metrics on importance scores
 
@@ -13,6 +10,7 @@ library(effsize)
 library(car)
 library(randomForest)
 library(ggplot2)
+library(reshape2)
 
 # List of functions
 
@@ -188,7 +186,7 @@ applyVIF <- function(dataset,
     # reapply VIF to ensure that there is no presence of inter-correlated metrics
     if (length(inter.correlated.metrics) != 0) {
         mitigated.metrics <-
-            VIF(dataset, mitigated.metrics, defect, VIF.threshold)
+            applyVIF(dataset, mitigated.metrics, defect, VIF.threshold)
     }
     
     print('Variance Inflation Factor : END')
@@ -283,6 +281,9 @@ TLOC.importance.scores <-
         },
         Permutation.Importance = {
             
+        },
+        Permutation.Importance.Scaled = {
+          
         }
     )
 
@@ -340,7 +341,7 @@ for (i in 1:length(orders)) {
         rbind(TLOC.importance.scores$Gini.Importance,
               gini.importance[match('TLOC', orders[[i]])])
     
-    # Permutation Importance
+    # Permutation Importance (Non-scaled)
     permutation.importance <-
         importance(rf.model, type = 1, scale = F)[, 1] # Get each metric sum square
     permutation.importance <-
@@ -348,6 +349,15 @@ for (i in 1:length(orders)) {
     TLOC.importance.scores$Permutation.Importance <-
         rbind(TLOC.importance.scores$Permutation.Importance,
               permutation.importance[match('TLOC', orders[[i]])])
+    
+    # Permutation Importance (Scaled)
+    permutation.importance.scaled <-
+      importance(rf.model, type = 1, scale = T)[, 1] # Get each metric sum square
+    permutation.importance.scaled <-
+      permutation.importance.scaled / sum(permutation.importance.scaled) * 100 # Normalize to percentage
+    TLOC.importance.scores$Permutation.Importance.Scaled <-
+      rbind(TLOC.importance.scores$Permutation.Importance.Scaled,
+            permutation.importance.scaled[match('TLOC', orders[[i]])])
     
 }
 
@@ -364,25 +374,39 @@ levels(TLOC.plot.data$L1) <-
     c('ANOVA Type I',
       'ANOVA Type II/III (LR)',
       'Gini Importance',
-      'Permutation Importance')
+      'Permutation Importance (Non-scaled)',
+      'Permutation Importance (Scaled)')
+TLOC.plot.data$nonmitigated <- as.factor(as.numeric(TLOC.plot.data$Var1 != 0))
 
 # Plot a graph
 ggplot(data = TLOC.plot.data,
-       aes(x = Var1, y = value, fill = L1)) +
+       aes(x = as.factor(Var1), y = value, fill = nonmitigated)) +
     geom_bar(colour = "black",
              position = "dodge",
              stat = "identity") +
     labs(x = "Number of correlated metrics in a model", y = "Relative difference of importance score (%)") +
-    scale_fill_manual(name = "Model Interpretation\nTechnique",
-                      values = c("#d73027",
-                                 "#fee090",
-                                 "#91bfdb",
-                                 "#4575b4")) +
+  scale_fill_manual(
+    name = "",
+    breaks = c('0',
+               '1'),
+    labels = c("Mitigated model",
+               "Non-mitigated model"),
+    values = c(
+      
+      # red and blue
+      # "#d73027",
+      # "#4575b4"
+      # red and light green
+      # #d7191c
+      #abdda4
+      '#a6bddb',
+      '#d7191c'
+    )) +
     coord_cartesian(ylim = c(0, 100)) +
-    facet_wrap(~ L1, ncol = 2) +
-    theme(legend.position = "none")
+    facet_wrap(~ L1, ncol = 5) +
+    theme(legend.position = "top")
 
 # Export a graph
 ggsave(filename = '3.2_plot.pdf',
-       width = 6.5,
+       width = 16,
        height = 4)

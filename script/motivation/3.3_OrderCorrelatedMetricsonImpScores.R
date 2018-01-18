@@ -259,6 +259,7 @@ for (i in 1:length(orders)) {
         gini.importance[orders[[1]]] # Sort to Model 1 order
     
     outputList[[i]] <- list(
+        specification = i,
         lr.interpretation = anova.typeI,
         lr.performance = getPerformanceLR(lr.model, dataset[-train.data.index, ], orders[[i]], defect),
         rf.interpretation = gini.importance,
@@ -266,3 +267,5 @@ for (i in 1:length(orders)) {
     )
     
 }
+
+outputList

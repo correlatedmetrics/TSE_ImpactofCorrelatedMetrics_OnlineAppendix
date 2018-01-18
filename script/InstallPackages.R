@@ -11,7 +11,9 @@ package.list <- c(
     'caret',
     'pROC',
     'mccr',
-    'devtools'
+    'devtools',
+    'reshape2',
+    'dendextend'
 )
 
 installed.package.list <- installed.packages()[, "Package"]
