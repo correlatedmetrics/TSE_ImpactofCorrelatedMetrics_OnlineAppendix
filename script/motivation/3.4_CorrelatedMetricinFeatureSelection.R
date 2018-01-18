@@ -1,5 +1,6 @@
 
 
+
 # Motivation analysis
 # Section 3.4 The presence of correlated metrics in the set of metrics selected by a feature selection technique
 
@@ -16,13 +17,14 @@ applyVarClus <- function(dataset, sw.metrics, VarClus.threshold) {
     
   }
   correlated <- {
+    
   }
   # Apply variable clustering
   vc <-
-    varclus(~ .,
-            similarity = 'spearman',
-            data = dataset[, sw.metrics],
-            trans = "abs")
+    varclus( ~ .,
+             similarity = 'spearman',
+             data = dataset[, sw.metrics],
+             trans = "abs")
   
   # Apply cutoff threshold
   var.clustered <-
@@ -89,15 +91,20 @@ applyVIF <- function(dataset,
       family = binomial())
     VIF <- rms::vif(glm.model)
     inter.correlated.metrics <- names(VIF[VIF >= VIF.threshold])
-    if (length(inter.correlated.metrics) == 0){
+    if (length(inter.correlated.metrics) == 0) {
       print(paste0('nNon-inter-correlated metrics : ', length(sw.metrics)))
-      print(paste0(sw.metrics, collapse=', '))
+      print(paste0(sw.metrics, collapse = ', '))
       break
     }
     print(paste0('Step ', step, ' nMetrics : ', length(sw.metrics)))
-    print(paste0('Step ', step, ' nInter-correlated metrics : ',
-                 length(inter.correlated.metrics)))
-    sw.metrics <- sw.metrics[!(sw.metrics %in% inter.correlated.metrics)]
+    print(paste0(
+      'Step ',
+      step,
+      ' nInter-correlated metrics : ',
+      length(inter.correlated.metrics)
+    ))
+    sw.metrics <-
+      sw.metrics[!(sw.metrics %in% inter.correlated.metrics)]
     step <- step + 1
   }
   
@@ -106,11 +113,10 @@ applyVIF <- function(dataset,
   
 }
 
-# Plot a hierarchical cluster view using the results of 
+# Plot a hierarchical cluster view using the results of
 # the variable clustering analysis and variance inflation factor analysis
 meaningfulVCVIFPlot <-
   function(dataset, indep, vcIndep, vifIndep, label) {
-    
     # Modify from plot.varclus in Hmisc package
     .colorVCPlot <- function (vc,
                               metricsLabel,
@@ -178,9 +184,11 @@ meaningfulVCVIFPlot <-
       labels_colors(dend) <- textColor
       
       # max pixels need to plot metrics
-      maxLength <- max(unlist(lapply(metricsLabel$textMetrics, function(x) strwidth(x, font = 12, units = 'in'))))
+      maxLength <-
+        max(unlist(lapply(metricsLabel$textMetrics, function(x)
+          strwidth(x, font = 12, units = 'in'))))
       bottomMargin <- (5 + (4.544286 * (maxLength - 0.574)))
-      par(mar = c(bottomMargin, 5, 5, 2.5)) 
+      par(mar = c(bottomMargin, 5, 5, 2.5))
       plot(
         dend,
         main = "",
@@ -208,8 +216,20 @@ meaningfulVCVIFPlot <-
                         collapse = ""), adj = 0)
       }
       abline(h = 0.3)
-      legend('top', legend = c('Clean metric', 'Correlated metric', 'Inter-correlated metric', 'Correlated and Inter-correlated metric'), fill = c('darkgreen', 'red', 'blue', 'purple'), xpd = TRUE, 
-             inset = c(0, (-0.1 - (0.006 * (bottomMargin - 5)))))
+      legend(
+        'top',
+        legend = c(
+          'Clean metric',
+          'Correlated metric',
+          'Inter-correlated metric',
+          'Correlated and Inter-correlated metric'
+        ),
+        fill = c('darkgreen', 'red', 'blue', 'purple'),
+        xpd = TRUE,
+        inset = c(0, (-0.1 - (
+          0.006 * (bottomMargin - 5)
+        )))
+      )
       invisible()
       
     }
@@ -223,10 +243,10 @@ meaningfulVCVIFPlot <-
                            textMetrics = indep)
     names(dataPlot) <- tMetrics$textMetrics
     # Drop one of two variables that have perfect collinearity
-    vc <- varclus(~ .,
-                  similarity = 'spearman',
-                  data = dataPlot,
-                  trans = "abs")
+    vc <- varclus( ~ .,
+                   similarity = 'spearman',
+                   data = dataPlot,
+                   trans = "abs")
     
     pdf(
       paste0(label, '.pdf'),
@@ -239,7 +259,7 @@ meaningfulVCVIFPlot <-
     abline(h = 0.3)
     dev.off()
     
-}
+  }
 
 # Main
 
@@ -261,8 +281,12 @@ sw.metrics <- Data$indep
 # - pre, FOUT_max, MLOC_sum, NOM_avg, NSM_max, NSM_sum, VG_sum
 fs.metrics <- sw.metrics[c(1, 4, 8, 16, 24, 28, 32)]
 
+# Apply the variable clustering analysis (VarClus) to examine the correlations among software metrics and identify correlated metrics
 correlated.metrics <-
   applyVarClus(dataset, fs.metrics, VarClus.threshold)
-inter.correlated.metrics <- fs.metrics[!(fs.metrics %in% applyVIF(dataset, fs.metrics, defect, 5))]
+# Apply the variance inflation factor analysis (VIF) to identify inter-correlated metrics
+inter.correlated.metrics <-
+  fs.metrics[!(fs.metrics %in% applyVIF(dataset, fs.metrics, defect, 5))]
 
+# Plot a hierarchical cluster view of the set of metrics using the results from VarClus and VIF
 meaningfulVCVIFPlot(dataset, fs.metrics, fs.metrics[!(fs.metrics %in% correlated.metrics$correlated.metrics)], fs.metrics[!(fs.metrics %in% inter.correlated.metrics)], '3.4_plot')
